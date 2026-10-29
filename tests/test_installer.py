@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from wb_launcher import installer, payload
+from wb_launcher import APP_DBUS_ID, installer, payload
 
 
 def make_zip(path: Path, members: dict[str, bytes]) -> Path:
@@ -180,6 +180,14 @@ class GuessLauncherTest(unittest.TestCase):
     def test_desktop_quote_handles_spaces(self) -> None:
         self.assertEqual(installer._desktop_quote("/usr/bin/x"), "/usr/bin/x")
         self.assertEqual(installer._desktop_quote("/home/a b/x"), '"/home/a b/x"')
+
+    def test_desktop_id_matches_application_id(self) -> None:
+        # GTK 的窗口按 application_id 找桌面项；名字对不上，Dock 里就是空白图标
+        self.assertEqual(installer.DESKTOP_ID, f"{APP_DBUS_ID}.desktop")
+
+    def test_desktop_template_declares_wmclass(self) -> None:
+        template = installer.resource("workbuddy2api-launcher.desktop.in").read_text(encoding="utf-8")
+        self.assertIn(f"StartupWMClass={APP_DBUS_ID}", template)
 
     def test_extension_uuid_matches_metadata(self) -> None:
         import json

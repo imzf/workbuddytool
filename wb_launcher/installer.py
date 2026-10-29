@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import (
+    APP_DBUS_ID,
     DEFAULT_HOST,
     DEFAULT_MIRROR,
     DEFAULT_PORT,
@@ -25,7 +26,7 @@ from .settings import config_home, data_home
 from .util import http_probe, human_size, is_command_available, run
 
 EXTENSION_UUID = "workbuddy2api-panel@local"
-DESKTOP_ID = "workbuddy2api-launcher.desktop"
+DESKTOP_ID = f"{APP_DBUS_ID}.desktop"
 
 _DATA_DIR = Path(__file__).with_name("data")
 

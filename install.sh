@@ -14,6 +14,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_ID="workbuddy2api-launcher"
+# 桌面项文件名必须等于 GApplication 的 application_id（见 wb_launcher/__init__.py），
+# 否则 GNOME 认不出运行中的窗口，Dock 里会是空白图标。
+DESKTOP_ID="io.github.workbuddy2api.launcher.desktop"
 EXT_UUID="workbuddy2api-panel@local"
 PREFIX="${PREFIX:-$HOME/.local}"
 WITH_EXTENSION=0
@@ -73,7 +76,9 @@ info "命令行：$BIN_DIR/workbuddy-launcher"
 step "安装桌面入口与图标"
 mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
 cp "$SCRIPT_DIR/wb_launcher/data/workbuddy2api-panel.svg" "$ICON_DIR/workbuddy2api-panel.svg"
-cat > "$DESKTOP_DIR/workbuddy2api-launcher.desktop" <<EOF
+# 旧版本用的是 workbuddy2api-launcher.desktop，先清掉避免出现两个入口
+rm -f "$DESKTOP_DIR/workbuddy2api-launcher.desktop"
+cat > "$DESKTOP_DIR/$DESKTOP_ID" <<EOF
 [Desktop Entry]
 Type=Application
 Name=WorkBuddy2API 面板
@@ -86,11 +91,12 @@ Categories=Development;Utility;
 Keywords=workbuddy;codebuddy;openai;api;gateway;panel;
 StartupNotify=true
 X-GNOME-UsesNotifications=true
+StartupWMClass=io.github.workbuddy2api.launcher
 EOF
-chmod 644 "$DESKTOP_DIR/workbuddy2api-launcher.desktop"
+chmod 644 "$DESKTOP_DIR/$DESKTOP_ID"
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
 command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t "$DATA_HOME/icons/hicolor" >/dev/null 2>&1 || true
-info "桌面项：$DESKTOP_DIR/workbuddy2api-launcher.desktop"
+info "桌面项：$DESKTOP_DIR/$DESKTOP_ID"
 
 if [ "$WITH_EXTENSION" -eq 1 ]; then
     step "安装 GNOME 顶部栏扩展"

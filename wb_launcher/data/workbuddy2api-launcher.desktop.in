@@ -11,3 +11,5 @@ Categories=Development;Utility;
 Keywords=workbuddy;codebuddy;openai;api;gateway;panel;
 StartupNotify=true
 X-GNOME-UsesNotifications=true
+# 与 GApplication 的 application_id 保持一致，GNOME 才能把窗口和桌面项对上
+StartupWMClass=io.github.workbuddy2api.launcher

@@ -161,7 +161,7 @@ Wayland 会话下新装的扩展需要**注销并重新登录**（或重启 GNOM
 | `~/.local/share/workbuddy2api-panel/` | 面板：`wb2api`、`config.json`、`auths/`、`data/` |
 | `~/.config/workbuddy2api-launcher/config.json` | 启动器偏好（安装目录、下载源、窗口大小） |
 | `~/.config/systemd/user/workbuddy2api.service` | systemd 用户单元 |
-| `~/.local/share/applications/workbuddy2api-launcher.desktop` | 桌面项 |
+| `~/.local/share/applications/io.github.workbuddy2api.launcher.desktop` | 桌面项 |
 | `~/.local/share/gnome-shell/extensions/workbuddy2api-panel@local/` | GNOME 扩展 |
 
 面板的 `config.json` 只写必要字段（`listen`、`api_key`、`auth_dir`、

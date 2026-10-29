@@ -9,6 +9,9 @@
 __version__ = "1.0.0"
 
 APP_ID = "workbuddy2api-launcher"
+# GApplication / D-Bus 标识。桌面项文件名必须与它完全一致，
+# 否则 GNOME 认不出运行中的窗口属于哪个应用，Dock 里只会显示空白图标。
+APP_DBUS_ID = "io.github.workbuddy2api.launcher"
 APP_NAME = "WorkBuddy2API 面板"
 UNIT_NAME = "workbuddy2api.service"
 DEFAULT_PORT = 7863

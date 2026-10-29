@@ -50,6 +50,7 @@ rm -rf "$LIB_DIR"
 info "已删除 $BIN_DIR/workbuddy-launcher 与 $LIB_DIR"
 
 printf '\n▶ 移除桌面入口与图标\n'
+rm -f "$DATA_HOME/applications/io.github.workbuddy2api.launcher.desktop"
 rm -f "$DATA_HOME/applications/workbuddy2api-launcher.desktop"
 rm -f "$DATA_HOME/icons/hicolor/scalable/apps/workbuddy2api-panel.svg"
 info "已删除桌面项与图标"
