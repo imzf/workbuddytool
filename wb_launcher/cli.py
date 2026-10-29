@@ -104,7 +104,8 @@ def cmd_status(_args: argparse.Namespace) -> int:
     print(f"开机自启：{'是' if service.is_enabled() else '否'}")
     if status.reachable:
         print(f"账号：{status.healthy_accounts} 可用 / {status.accounts} 总计")
-        print("提示：还没有账号时 /healthz 会返回 503，属正常现象，先在面板里加账号。")
+        if status.accounts == 0:
+            print("提示：还没有账号时 /healthz 会返回 503，属正常现象，先在面板里加账号。")
     else:
         print(f"端口：无响应（{status.detail or '连接失败'}）")
     return 0 if status.reachable else 2
