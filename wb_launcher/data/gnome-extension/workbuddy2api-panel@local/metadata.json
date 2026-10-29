@@ -1,0 +1,8 @@
+{
+  "uuid": "workbuddy2api-panel@local",
+  "name": "WorkBuddy2API 面板",
+  "description": "在 GNOME 顶部面板查看 WorkBuddy2API 面板的运行状态，并一键启动、停止、重启或打开面板。",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "url": "https://github.com/misakano7545/workbuddy2api-panel",
+  "version": 1
+}

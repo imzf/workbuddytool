@@ -1,0 +1,12 @@
+/* 面板按钮的状态色：用 color 着色 symbolic 图标，跟随主题前景色以外的语义色。 */
+.workbuddy-ok {
+    color: #2ec27e;
+}
+
+.workbuddy-off {
+    color: #9a9996;
+}
+
+.workbuddy-err {
+    color: #e01b24;
+}

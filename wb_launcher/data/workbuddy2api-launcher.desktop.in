@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=WorkBuddy2API 面板
+Name[zh_CN]=WorkBuddy2API 面板
+GenericName=CodeBuddy 账号池控制台
+Comment=管理 CodeBuddy 账号池与 OpenAI 兼容网关
+Exec=@EXEC@
+Icon=@ICON@
+Terminal=false
+Categories=Development;Utility;
+Keywords=workbuddy;codebuddy;openai;api;gateway;panel;
+StartupNotify=true
+X-GNOME-UsesNotifications=true
