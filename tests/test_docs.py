@@ -18,7 +18,7 @@ class ReadmeTest(unittest.TestCase):
 
     def test_has_disclaimer_section(self) -> None:
         self.assertIn("## 免责声明", self.text)
-        self.assertIn("AS IS", self.text)
+        self.assertIn("DISCLAIMER.md", self.text)
 
     def test_has_early_warning(self) -> None:
         # 开头就要能看到，不能只藏在文末
@@ -33,6 +33,35 @@ class ReadmeTest(unittest.TestCase):
         self.assertIn("[`LICENSE`](LICENSE)", self.text)
 
 
+class DisclaimerFileTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.path = ROOT / "DISCLAIMER.md"
+        self.text = self.path.read_text(encoding="utf-8")
+
+    def test_file_exists_and_is_substantive(self) -> None:
+        self.assertGreater(len(self.text), 2000)
+
+    def test_core_clauses_present(self) -> None:
+        for heading in (
+            "与官方无关联",
+            "许可与不担保",
+            "风险承担",
+            "使用限制",
+            "责任限制",
+            "赔偿",
+            "可分割性",
+        ):
+            self.assertIn(heading, self.text)
+
+    def test_has_effective_date(self) -> None:
+        self.assertIn("生效日期", self.text)
+        self.assertRegex(self.text, r"20\d\d 年")
+
+    def test_limits_survive_mandatory_law(self) -> None:
+        # 责任限制不能写成连法律强制责任都排除
+        self.assertIn("不得排除或限制的责任", self.text)
+
+
 class CliHelpTest(unittest.TestCase):
     def test_help_mentions_disclaimer(self) -> None:
         buffer = io.StringIO()
@@ -42,6 +71,7 @@ class CliHelpTest(unittest.TestCase):
         output = buffer.getvalue()
         self.assertIn("免责声明", output)
         self.assertIn("风险", output)
+        self.assertIn("DISCLAIMER.md", output)
 
 
 class InstallScriptTest(unittest.TestCase):
