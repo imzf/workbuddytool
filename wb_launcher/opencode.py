@@ -12,6 +12,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,16 @@ PACKAGE = "aisdk:@ai-sdk/openai-compatible"
 
 class OpenCodeError(RuntimeError):
     pass
+
+
+@dataclass
+class SyncReport:
+    path: Path
+    models: int
+    big: int
+    promos: dict[str, int] = field(default_factory=dict)
+    notes: list[tuple[str, str]] = field(default_factory=list)
+    preview: str | None = None
 
 
 def config_path() -> Path:
@@ -402,10 +413,15 @@ def sync(
     models = fetch_models(base_url, api_key)
     provider = build_provider(models, base_url, api_key, provider_id=provider_id)
     promos: dict[str, int] = {}
+    notes: list[tuple[str, str]] = []
     for model in models:
         label = _promo_label(model.get("promo_label"))
-        if label:
-            promos[label] = promos.get(label, 0) + 1
+        if not label:
+            continue
+        promos[label] = promos.get(label, 0) + 1
+        note = str(model.get("promo_note") or "").strip()
+        if note:
+            notes.append((f"{model.get('id')}（{label}）", note))
     target = path or config_path()
     if target.exists():
         text = target.read_text(encoding="utf-8")
@@ -417,4 +433,11 @@ def sync(
         write_config(target, text)
     big = sum(1 for m in provider["models"].values() if m["limit"]["context"] >= 1_000_000)
     preview = _render(provider, "    ")
-    return target, len(provider["models"]), big, (preview if dry_run else None), promos
+    return SyncReport(
+        path=target,
+        models=len(provider["models"]),
+        big=big,
+        promos=promos,
+        notes=notes,
+        preview=preview if dry_run else None,
+    )

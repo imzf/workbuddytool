@@ -163,7 +163,7 @@ def cmd_opencode_models(args: argparse.Namespace) -> int:
     base_url = service.api_base_url(host, port)
     target = Path(args.config).expanduser() if args.config else None
     try:
-        path, count, big, preview, promos = opencode.sync(
+        report = opencode.sync(
             base_url,
             api_key,
             provider_id=args.provider_id,
@@ -177,15 +177,17 @@ def cmd_opencode_models(args: argparse.Namespace) -> int:
         return 1
 
     if args.dry_run:
-        print(preview)
-        print(f"\n（--dry-run，没有写入 {path}）")
+        print(report.preview)
+        print(f"\n（--dry-run，没有写入 {report.path}）")
     else:
-        print(f"✓ 已同步 {count} 个模型到 {path}")
+        print(f"✓ 已同步 {report.models} 个模型到 {report.path}")
     print(f"  网关：{base_url}")
-    print(f"  其中 {big} 个支持 1M 上下文")
-    if promos:
-        detail = "，".join(f"{k} {v} 个" for k, v in promos.items())
+    print(f"  其中 {report.big} 个支持 1M 上下文")
+    if report.promos:
+        detail = "，".join(f"{k} {v} 个" for k, v in report.promos.items())
         print(f"  促销：{detail}")
+        for name, note in report.notes:
+            print(f"    · {name}：{note}")
     if not args.dry_run:
         print("  重启 OpenCode 后生效。")
     return 0
