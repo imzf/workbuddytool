@@ -293,8 +293,55 @@ zip 安全检查、systemd 单元生成与 `systemd-analyze` 校验、监听地�
 | `wb_launcher/opencode.py` | 把网关模型清单写进 OpenCode 配置 |
 | `wb_launcher/data/` | systemd 单元模板、桌面项模板、图标、GNOME 扩展 |
 
-## 说明
+## 合规与安全
 
-本项目只做 Linux 桌面的安装与托管，面板功能、端口、账号规则全部由上游决定。
-上游 `misakano7545/workbuddy2api-panel` 是基于 `linguo2625469/workbuddy2api-panel`
-的延续分支；使用前请自行阅读上游 README 中的免责声明与风险提示。
+**上游与许可**
+
+- 本仓库只包含启动器代码，不含上游任何源码，也不重新分发上游二进制；
+  安装时从官方 Release 现下载、现校验。
+- 上游 `misakano7545/workbuddy2api-panel` 使用 MIT 许可，版权链为
+  Sliverkiss → linguo2625469 → misakano7545；本项目是独立实现，同样按 MIT 发布（见 `LICENSE`）。
+- 上游的许可证与免责声明在其仓库根目录，分发本项目的二进制或安装包时请一并保留。
+- 面板、网关、账号规则全部由上游决定，本项目只负责安装与托管。
+
+**使用边界**
+
+上游对自己的定位写得很清楚，这里原样转述：
+
+> ⚠️ 合规须知：本项目是**非官方**网关，使用 CodeBuddy 账号作为上游，
+> **仅限本人授权账号、本机 / 私有环境测试**。
+>
+> 风险自评：上游随时可能彻底收紧导致通道不可用；因使用非官方客户端导致的
+> 账号风控 / 封禁，由使用者自行承担。
+
+也就是说：只用自己的账号、只在本机或自己的私有环境里跑；不要拿它做对外服务、
+不要收集或转卖他人的账号凭证。是否符合腾讯的服务条款，需要你自己判断并承担后果。
+
+**数据落在哪**
+
+| 数据 | 位置 | 权限 |
+| --- | --- | --- |
+| 账号凭证 | `~/.local/share/workbuddy2api-panel/auths/` | 目录 `0700`，文件 `0600` |
+| 网关配置（含 `api_key`） | `~/.local/share/workbuddy2api-panel/config.json` | `0600` |
+| 运行数据 | `~/.local/share/workbuddy2api-panel/data/` | 目录 `0700` |
+| OpenCode provider 配置 | `~/.config/opencode/opencode.jsonc` | `0600` |
+
+启动器不收集遥测、不上报任何数据；除了下载 Release 和本机网关，没有别的网络请求。
+
+**服务加固**
+
+systemd 用户单元默认带上：`NoNewPrivileges`、`ProtectSystem=full`、
+`ProtectHome=read-only`、`ReadWritePaths=<安装目录>`、`UMask=0077`、
+`ProtectKernelTunables/Modules/ControlGroups/Clock/Hostname/KernelLogs`、
+`ProtectProc=invisible`、`RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK`、
+`RestrictRealtime`、`RestrictSUIDSGID`、`LockPersonality`、`RestrictNamespaces`。
+`systemd-analyze security --user` 评分 5.9（MEDIUM）；剩下的大头是系统调用过滤，
+加上去会牺牲兼容性，这里刻意没做。
+
+**已知边界**
+
+- 面板默认只监听 `127.0.0.1`。改成 `0.0.0.0` 后只有 `api_key` 一层保护，
+  而且走明文 HTTP，局域网内可被嗅探，别在不可信网络里这么用。
+- 下载只校验 Release 资产自带的 SHA-256 摘要，没有 GPG 签名；威胁模型里
+  GitHub API 与下载源是同一个信任根。
+- 启动器自身只做本机操作，不联网控制远端主机。

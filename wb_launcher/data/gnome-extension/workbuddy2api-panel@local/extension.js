@@ -16,6 +16,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const UNIT = 'workbuddy2api.service';
+const DESKTOP_ID = 'io.github.workbuddy2api.launcher.desktop';
 const UUID = 'workbuddy2api-panel@local';
 const DEFAULT_PORT = 7863;
 const POLL_SECONDS = 5;
@@ -253,16 +254,22 @@ class Indicator extends PanelMenu.Button {
     }
 
     _openLauncher() {
-        try {
-            const info = Gio.DesktopAppInfo.new('workbuddy2api-launcher.desktop');
-            if (info) {
-                info.launch([], null);
-                return;
+        // 桌面项名字必须和 GApplication 的 application_id 一致，旧的也认一下
+        for (const id of [DESKTOP_ID, 'workbuddy2api-launcher.desktop']) {
+            try {
+                const info = Gio.DesktopAppInfo.new(id);
+                if (info) {
+                    info.launch([], null);
+                    return;
+                }
+            } catch (e) {
+                // 继续试下一个
             }
-        } catch (e) {
-            // 走命令行兜底
         }
-        const proc = spawn(['workbuddy-launcher']);
+        // 扩展的 PATH 是登录时继承的，~/.local/bin 不一定在里面，直接给绝对路径
+        const home = GLib.get_home_dir();
+        const fallback = GLib.build_filenamev([home, '.local', 'bin', 'workbuddy-launcher']);
+        const proc = spawn([fallback]);
         if (!proc)
             Main.notify('WorkBuddy2API 面板', '未找到启动器，请先运行 install.sh');
     }

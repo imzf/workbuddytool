@@ -66,6 +66,11 @@ class ConfigTest(unittest.TestCase):
         # 权限应当收紧到 0600，密钥不能给同机其他用户读
         self.assertEqual(os.stat(self.paths.config).st_mode & 0o777, 0o600)
 
+    def test_directories_are_private(self) -> None:
+        self.paths.ensure_dirs()
+        for directory in (self.paths.root, self.paths.auths, self.paths.data):
+            self.assertEqual(os.stat(directory).st_mode & 0o777, 0o700, directory)
+
     def test_ensure_config_keeps_existing_values(self) -> None:
         payload.write_config(
             self.paths,

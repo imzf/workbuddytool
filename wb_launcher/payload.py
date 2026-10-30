@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import secrets
 from dataclasses import dataclass
@@ -42,9 +43,10 @@ class PanelPaths:
         return self.binary.is_file()
 
     def ensure_dirs(self) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
-        self.auths.mkdir(parents=True, exist_ok=True)
-        self.data.mkdir(parents=True, exist_ok=True)
+        # 账号凭证就在 auths/ 里，目录只给本人可进
+        for directory in (self.root, self.auths, self.data):
+            directory.mkdir(parents=True, exist_ok=True)
+            os.chmod(directory, 0o700)
 
 
 def new_api_key() -> str:

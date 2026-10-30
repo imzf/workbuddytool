@@ -9,7 +9,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from wb_launcher import installer
+from wb_launcher import APP_DBUS_ID, installer
 
 EXT_DIR = installer.resource("gnome-extension", installer.EXTENSION_UUID)
 

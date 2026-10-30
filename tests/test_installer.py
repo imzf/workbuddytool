@@ -120,6 +120,12 @@ class UnitTest(unittest.TestCase):
         self.assertIn('ReadWritePaths="', content)
         self.assertIn("Restart=on-failure", content)
         self.assertIn("WantedBy=default.target", content)
+        # 账号凭证落在安装目录，服务创建的文件只给自己读写
+        self.assertIn("UMask=0077", content)
+        self.assertIn("RestrictAddressFamilies=", content)
+        self.assertIn("ProtectKernelTunables=true", content)
+        # 注释里提到过 PrivateTmp，但不能再有这一行指令
+        self.assertEqual([l for l in content.splitlines() if l.startswith("PrivateTmp=")], [])
 
     def test_working_directory_escapes_specifier(self) -> None:
         content, _ = self.render(self.dir / "100%")
@@ -174,6 +180,24 @@ class DesktopTest(unittest.TestCase):
         self.assertIn("Icon=", text)
         self.assertTrue(text.startswith("[Desktop Entry]"))
         self.assertFalse(text.endswith("\n\n"))
+
+    def test_single_main_category(self) -> None:
+        # .desktop 只允许一个主分类，写两个会在菜单里出现两遍
+        target = self.dir / "wb.desktop"
+        with (
+            mock.patch.object(installer, "desktop_path", return_value=target),
+            mock.patch.object(installer, "icon_path", return_value=self.dir / "x.svg"),
+            mock.patch.object(installer, "run", return_value=subprocess.CompletedProcess([], 0, "", "")),
+        ):
+            installer._install_desktop("/usr/bin/x", installer.Reporter())
+        categories = [
+            line.split("=", 1)[1]
+            for line in target.read_text(encoding="utf-8").splitlines()
+            if line.startswith("Categories=")
+        ][0]
+        main = {"AudioVideo", "Development", "Education", "Game", "Graphics", "Network",
+                "Office", "Science", "Settings", "System", "Utility"}
+        self.assertEqual(len([c for c in categories.split(";") if c in main]), 1, categories)
 
 
 class GuessLauncherTest(unittest.TestCase):

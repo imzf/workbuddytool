@@ -78,16 +78,22 @@ mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
 cp "$SCRIPT_DIR/wb_launcher/data/workbuddy2api-panel.svg" "$ICON_DIR/workbuddy2api-panel.svg"
 # 旧版本用的是 workbuddy2api-launcher.desktop，先清掉避免出现两个入口
 rm -f "$DESKTOP_DIR/workbuddy2api-launcher.desktop"
+# .desktop 的 Exec 按 shell 规则拆词，路径里有空格必须加引号
+EXEC_PATH="$BIN_DIR/workbuddy-launcher"
+case "$EXEC_PATH" in
+    *[[:space:]\"]*) EXEC_VALUE="\"$EXEC_PATH\"" ;;
+    *) EXEC_VALUE="$EXEC_PATH" ;;
+esac
 cat > "$DESKTOP_DIR/$DESKTOP_ID" <<EOF
 [Desktop Entry]
 Type=Application
 Name=WorkBuddy2API 面板
 GenericName=CodeBuddy 账号池控制台
 Comment=管理 CodeBuddy 账号池与 OpenAI 兼容网关
-Exec=$BIN_DIR/workbuddy-launcher
+Exec=$EXEC_VALUE
 Icon=workbuddy2api-panel
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 Keywords=workbuddy;codebuddy;openai;api;gateway;panel;
 StartupNotify=true
 X-GNOME-UsesNotifications=true
