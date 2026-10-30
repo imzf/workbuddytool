@@ -120,13 +120,19 @@ class ServiceStatus:
         return "已停止"
 
 
+def _probe_host(host: str) -> str:
+    """把监听地址换成本机真正能连的地址（通配地址走回环，IPv6 加方括号）。"""
+    check_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    return f"[{check_host}]" if ":" in check_host else check_host
+
+
 def health_url(host: str, port: int) -> str:
-    check_host = host
-    if check_host in ("0.0.0.0", "::", ""):
-        check_host = "127.0.0.1"
-    if ":" in check_host:
-        check_host = f"[{check_host}]"
-    return f"http://{check_host}:{port}/healthz"
+    return f"http://{_probe_host(host)}:{port}/healthz"
+
+
+def api_base_url(host: str, port: int) -> str:
+    """OpenAI 兼容接口的基地址，给 OpenCode 之类的客户端用。"""
+    return f"http://{_probe_host(host)}:{port}/v1"
 
 
 def status(host: str, port: int) -> ServiceStatus:

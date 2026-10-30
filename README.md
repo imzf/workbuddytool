@@ -117,6 +117,7 @@ workbuddy-launcher status        # 安装目录、版本、监听、服务状态
 workbuddy-launcher open          # 用浏览器打开面板
 workbuddy-launcher update        # 更新到最新版本
 workbuddy-launcher extension     # 安装 / 更新 GNOME 扩展
+workbuddy-launcher opencode-models  # 把网关的模型同步进 OpenCode 配置
 workbuddy-launcher version       # 显示版本
 workbuddy-launcher uninstall     # 停止并移除服务（保留账号数据）
 workbuddy-launcher uninstall --purge   # 连安装目录一起删
@@ -129,6 +130,33 @@ systemctl --user status workbuddy2api.service
 systemctl --user restart workbuddy2api.service
 journalctl --user -u workbuddy2api.service -f     # 实时日志
 ```
+
+## 接到 OpenCode
+
+面板和网关是 OpenAI 兼容的，可以直接给 [OpenCode](https://opencode.ai) 之类的客户端用。
+`opencode-models` 会从网关的 `/v1/models` 读真实清单，把 `providers.wb` 写进
+`~/.config/opencode/opencode.jsonc`：
+
+```bash
+workbuddy-launcher opencode-models            # 写入并覆盖 wb 这一段
+workbuddy-launcher opencode-models --dry-run  # 只打印，不落盘
+workbuddy-launcher opencode-models --config ~/work/opencode.jsonc
+```
+
+- 每个模型都带上 `limit.context` / `limit.output`，数值来自网关，不是猜的；
+  不写这两个字段客户端会按默认窗口算，1M 上下文的模型也会被提前截断。
+- `capabilities` 按网关的 `supports_tool_call` / `supports_images` / `supports_reasoning` 生成。
+- 只替换 `providers.wb`，其它提供商、`mcp`、注释都原样保留；重复执行结果不变。
+- 想用别的 provider 名字加 `--provider-id mywb`，客户端里就是 `mywb/<模型>`。
+
+写完重启 OpenCode，模型选择器里会出现 `WB` / `WB 国际` 开头的条目，
+命令行也可以直接指定：
+
+```bash
+opencode run -m wb/cn:glm-5.3 "..."
+```
+
+网关必须开着（`workbuddy-launcher status` 确认）。上游加减模型后重跑一次即可。
 
 ## GNOME 顶部栏扩展
 
@@ -262,6 +290,7 @@ zip 安全检查、systemd 单元生成与 `systemd-analyze` 校验、监听地�
 | `wb_launcher/service.py` | `systemctl --user`、状态、日志 |
 | `wb_launcher/settings.py` | 启动器自己的配置 |
 | `wb_launcher/cli.py` | 命令行入口 |
+| `wb_launcher/opencode.py` | 把网关模型清单写进 OpenCode 配置 |
 | `wb_launcher/data/` | systemd 单元模板、桌面项模板、图标、GNOME 扩展 |
 
 ## 说明

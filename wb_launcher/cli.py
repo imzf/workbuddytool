@@ -147,6 +147,47 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_opencode_models(args: argparse.Namespace) -> int:
+    from . import opencode
+
+    config = LauncherConfig.load()
+    paths = payload.PanelPaths(config.app_path)
+    if not paths.installed:
+        print("面板还没安装，先用 `workbuddy-launcher install` 装好。", file=sys.stderr)
+        return 1
+    host, port = payload.get_listen(paths)
+    api_key = payload.get_api_key(paths)
+    if not api_key:
+        print(f"{paths.config} 里没有 api_key。", file=sys.stderr)
+        return 1
+    base_url = service.api_base_url(host, port)
+    target = Path(args.config).expanduser() if args.config else None
+    try:
+        path, count, big, preview = opencode.sync(
+            base_url,
+            api_key,
+            provider_id=args.provider_id,
+            path=target,
+            dry_run=args.dry_run,
+        )
+    except opencode.OpenCodeError as exc:
+        print(f"同步失败：{exc}", file=sys.stderr)
+        if "连不上网关" in str(exc):
+            print("服务是不是没开？用 `workbuddy-launcher status` 看一眼。", file=sys.stderr)
+        return 1
+
+    if args.dry_run:
+        print(preview)
+        print(f"\n（--dry-run，没有写入 {path}）")
+    else:
+        print(f"✓ 已同步 {count} 个模型到 {path}")
+    print(f"  网关：{base_url}")
+    print(f"  其中 {big} 个支持 1M 上下文")
+    if not args.dry_run:
+        print("  重启 OpenCode 后生效。")
+    return 0
+
+
 def cmd_version(_args: argparse.Namespace) -> int:
     config = LauncherConfig.load()
     paths = payload.PanelPaths(config.app_path)
@@ -193,6 +234,12 @@ def build_parser() -> argparse.ArgumentParser:
     uninstall = sub.add_parser("uninstall", help="停止并移除 systemd 服务")
     uninstall.add_argument("--purge", action="store_true", help="连安装目录（账号与数据）一起删除")
     uninstall.set_defaults(func=cmd_uninstall)
+
+    oc = sub.add_parser("opencode-models", help="把网关的模型清单同步进 OpenCode 配置")
+    oc.add_argument("--config", help="OpenCode 配置文件（默认 ~/.config/opencode/opencode.jsonc）")
+    oc.add_argument("--provider-id", default="wb", help="provider 名字（默认 wb）")
+    oc.add_argument("--dry-run", action="store_true", help="只打印结果，不写文件")
+    oc.set_defaults(func=cmd_opencode_models)
 
     version = sub.add_parser("version", help="显示版本")
     version.set_defaults(func=cmd_version)
