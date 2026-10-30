@@ -53,9 +53,7 @@ def config_path() -> Path:
 # ── 读取模型清单 ──────────────────────────────────────────────────────
 
 
-def fetch_models(base_url: str, api_key: str, timeout: float = 10) -> list[dict[str, Any]]:
-    """GET {base_url}/models，返回可对话的模型（有 context_length 的那些）。"""
-    url = base_url.rstrip("/") + "/models"
+def _get_json(url: str, api_key: str, timeout: float) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         headers={
@@ -73,16 +71,91 @@ def fetch_models(base_url: str, api_key: str, timeout: float = 10) -> list[dict[
         raise OpenCodeError(f"网关返回 HTTP {exc.code}：{detail or url}") from exc
     except Exception as exc:  # noqa: BLE001 - 网络层异常类型很多
         raise OpenCodeError(f"连不上网关 {url}：{exc}") from exc
+    if not isinstance(payload, dict):
+        raise OpenCodeError("网关返回的不是 JSON 对象")
+    return payload
 
-    models = payload.get("data") if isinstance(payload, dict) else None
-    if not isinstance(models, list):
-        raise OpenCodeError("网关返回的模型列表格式不对（缺少 data 数组）")
-    return [m for m in models if isinstance(m, dict) and m.get("context_length")]
+
+def panel_models_url(base_url: str) -> str:
+    """把 OpenAI 基地址换成面板自己的模型接口（只有它带促销字段）。"""
+    root = base_url.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[: -len("/v1")]
+    return root + "/panel/api/models"
+
+
+def fetch_models(base_url: str, api_key: str, timeout: float = 10) -> list[dict[str, Any]]:
+    """读模型清单。
+
+    面板的 /panel/api/models 比 OpenAI 兼容接口多出 promo_factor / promo_label /
+    promo_note，用它才能标出「限时免费」「夜间免费」；拿不到再退回 /v1/models。
+    """
+    try:
+        payload = _get_json(panel_models_url(base_url), api_key, timeout)
+        models = payload.get("models")
+        if not isinstance(models, list):
+            raise OpenCodeError("面板接口里没有 models 数组")
+        picked = [
+            m
+            for m in models
+            if isinstance(m, dict)
+            and m.get("context_length")
+            and not m.get("image_generation")
+            and not m.get("hidden")
+        ]
+        if picked:
+            return picked
+        raise OpenCodeError("面板接口没有返回可用模型")
+    except OpenCodeError:
+        # 老版本网关没有这个接口，退回标准接口（没有促销信息）
+        payload = _get_json(base_url.rstrip("/") + "/models", api_key, timeout)
+        models = payload.get("data")
+        if not isinstance(models, list):
+            raise OpenCodeError("网关返回的模型列表格式不对（缺少 data 数组）")
+        return [m for m in models if isinstance(m, dict) and m.get("context_length")]
+
+
+def _normalise_credits(value: Any) -> str:
+    """把 "x0.15" / "0.15x" / "x0.79 credits" 统一成 x0.15。"""
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    text = text.replace("credits", "").strip()
+    if text.endswith("x"):
+        text = "x" + text[:-1]
+    return text
+
+
+def _promo_label(value: Any) -> str:
+    text = str(value or "").strip()
+    return {"Free now": "限时免费", "Free": "免费"}.get(text, text)
+
+
+def _price_bits(model: dict[str, Any]) -> list[str]:
+    """返回名字后面要跟的标签：促销类型 + 实际倍率。"""
+    label = _promo_label(model.get("promo_label"))
+    factor = model.get("promo_factor")
+    promo = _normalise_credits(model.get("promo_credits"))
+    base = _normalise_credits(model.get("credits"))
+
+    if factor == 0:
+        # 免费档：再标倍率只会变成 0.00x 噪音
+        return [label or "免费"]
+    if factor is not None and promo:
+        return [label, promo] if label else [promo]
+    bits = [label] if label else []
+    if base:
+        bits.append(base)
+    return bits
 
 
 def _label(model: dict[str, Any]) -> str:
     prefix = "WB 国际 · " if str(model.get("id", "")).startswith("global:") else "WB "
-    return prefix + (model.get("name") or str(model.get("id")))
+    name = prefix + (model.get("name") or str(model.get("id")))
+    tail = " ".join(_price_bits(model))
+    if model.get("tier") == "Pro Only":
+        tail = f"{tail} · Pro" if tail else "Pro"
+    return f"{name} · {tail}" if tail else name
 
 
 def build_provider(
@@ -324,10 +397,15 @@ def sync(
 ) -> tuple[Path, int, int, str | None]:
     """拉模型清单并写进 OpenCode 配置。
 
-    返回 (配置路径, 模型数, 1M 模型数, 预览文本)。
+    返回 (配置路径, 模型数, 1M 模型数, 预览文本, 促销统计)。
     """
     models = fetch_models(base_url, api_key)
     provider = build_provider(models, base_url, api_key, provider_id=provider_id)
+    promos: dict[str, int] = {}
+    for model in models:
+        label = _promo_label(model.get("promo_label"))
+        if label:
+            promos[label] = promos.get(label, 0) + 1
     target = path or config_path()
     if target.exists():
         text = target.read_text(encoding="utf-8")
@@ -339,4 +417,4 @@ def sync(
         write_config(target, text)
     big = sum(1 for m in provider["models"].values() if m["limit"]["context"] >= 1_000_000)
     preview = _render(provider, "    ")
-    return target, len(provider["models"]), big, (preview if dry_run else None)
+    return target, len(provider["models"]), big, (preview if dry_run else None), promos

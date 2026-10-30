@@ -139,7 +139,8 @@ journalctl --user -u workbuddy2api.service -f     # 实时日志
 ## 接到 OpenCode
 
 面板和网关是 OpenAI 兼容的，可以直接给 [OpenCode](https://opencode.ai) 之类的客户端用。
-`opencode-models` 会从网关的 `/v1/models` 读真实清单，把 `providers.wb` 写进
+`opencode-models` 会读网关的模型清单（优先面板的 `/panel/api/models`，它比
+`/v1/models` 多出促销字段），把 `providers.wb` 写进
 `~/.config/opencode/opencode.jsonc`：
 
 ```bash
@@ -150,6 +151,18 @@ workbuddy-launcher opencode-models --config ~/work/opencode.jsonc
 
 - 每个模型都带上 `limit.context` / `limit.output`，数值来自网关，不是猜的；
   不写这两个字段客户端会按默认窗口算，1M 上下文的模型也会被提前截断。
+- 模型名后面直接标出积分倍率和促销状态，选模型时不用再去面板里翻：
+
+  | 显示 | 含义 |
+  | --- | --- |
+  | `WB 快速 · x0.15` | 正常计费，每单位消耗 0.15 倍积分 |
+  | `WB Hy3 · 限时免费` | 促销期内免费（`promo_factor` 为 0） |
+  | `WB Hy4 preview · 夜间免费` | 指定时段免费，注意时段从面板的说明里看 |
+  | `WB GLM-5.2 · 夜间折扣 x0.50` | 非高峰/夜间按 0.50 倍计费 |
+  | `WB 国际 · GPT-6-Astra · x6.67 · Pro` | 仅 Pro 订阅可用 |
+
+  促销数据来自面板接口的 `promo_label` / `promo_factor` / `promo_credits`；
+  老网关没有这个接口时自动退回 `/v1/models`，名字里只保留倍率。
 - `capabilities` 按网关的 `supports_tool_call` / `supports_images` / `supports_reasoning` 生成。
 - 只替换 `providers.wb`，其它提供商、`mcp`、注释都原样保留；重复执行结果不变。
 - 想用别的 provider 名字加 `--provider-id mywb`，客户端里就是 `mywb/<模型>`。
