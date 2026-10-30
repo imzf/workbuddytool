@@ -200,6 +200,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="workbuddy-launcher",
         description="WorkBuddy2API 面板的 Linux 启动器（GTK4 + systemd 用户服务）",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "免责声明：本项目与腾讯 / CodeBuddy 官方无关，未获其授权或认可。\n"
+            "软件按「现状」提供，不附带任何担保；使用非官方网关可能导致账号被\n"
+            "限流、风控或封禁，风险由使用者自行承担。详见 README 的「免责声明」。"
+        ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command")

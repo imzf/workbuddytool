@@ -535,6 +535,16 @@ class MainWindow(Adw.ApplicationWindow):
         footer.set_margin_top(4)
         content.append(footer)
 
+        disclaimer = Gtk.Label(
+            label="本工具与腾讯 / CodeBuddy 官方无关联，按「现状」提供；"
+            "使用非官方网关可能导致账号被风控或封禁，风险自负。",
+            wrap=True,
+            xalign=0,
+        )
+        disclaimer.add_css_class("dim-label")
+        disclaimer.add_css_class("caption")
+        content.append(disclaimer)
+
         self._install_actions()
         self._apply_local_state()
         return page

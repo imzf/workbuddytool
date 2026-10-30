@@ -136,4 +136,7 @@ cat <<EOF
   打开方式：应用菜单里的「WorkBuddy2API 面板」，或运行：$BIN_DIR/workbuddy-launcher
   首次打开会引导你下载并安装面板本体（不需要 root）。
 
+  免责声明：本工具与腾讯 / CodeBuddy 官方无关，按「现状」提供；
+  使用非官方网关可能导致账号被风控或封禁，风险自负。
+
 EOF
